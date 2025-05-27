@@ -3,6 +3,8 @@ import express from 'express'
 import cors from 'cors'
 import supabase from './supabaseClient.js'
 import authRoutes from './routes/auth.js'
+import agendamentoRoutes from './routes/agendamentos.js' // Importa rotas de agendamento
+import servicosRoutes from './routes/servicos.js' // Importa rotas de serviços
 
 const app = express()
 const port = 3001
@@ -11,6 +13,8 @@ app.use(cors())
 app.use(express.json())
 
 app.use('/auth', authRoutes)
+app.use('/agendamento', agendamentoRoutes)  // Usa rotas de agendamento
+app.use('/servicos', servicosRoutes)        // Usa rotas de serviços
 
 app.get('/', (req, res) => {
   res.send('API do Núcleo AMADO rodando!')
