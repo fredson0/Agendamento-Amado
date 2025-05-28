@@ -4,7 +4,7 @@ import { authenticateToken } from '../middlewares/authMiddleware.js'
 
 const router = express.Router()
 
-// Criar um novo serviço (ex: atendimento psicológico, jurídico, etc)
+// Criar um novo serviço ex: atendimento psicológico, juridico, ou qualquer outro serviço
 router.post('/', authenticateToken, async (req, res) => {
   const { nome, descricao } = req.body
 
