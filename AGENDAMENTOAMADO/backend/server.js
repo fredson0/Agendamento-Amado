@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import supabase from './supabaseClient.js'
+
 import authRoutes from './routes/auth.js'
 import agendamentoRoutes from './routes/agendamentos.js' 
 import servicosRoutes from './routes/servicos.js' 

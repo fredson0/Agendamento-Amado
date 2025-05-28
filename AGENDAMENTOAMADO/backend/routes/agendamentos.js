@@ -1,41 +1,22 @@
 import express from 'express'
 import supabase from '../supabaseClient.js'
 import { authenticateToken } from '../middlewares/authMiddleware.js'
+import { checkAdmin } from '../middlewares/adminMiddleware.js'
 
 const router = express.Router()
 
-// ROTA: Listar agendamentos do usuário logado
-router.get('/minhas-sessoes', authenticateToken, async (req, res) => {
-  const id_usuario = req.user.id
-
-  const { data, error } = await supabase
-    .from('agendamentos')
-    .select('*')
-    .eq('id_usuario', id_usuario)
-
-  if (error) {
-    console.error('Erro ao buscar agendamentos:', error)
-    return res.status(500).json({ error: 'Erro ao buscar agendamentos' })
-  }
-
-  res.status(200).json({ agendamentos: data })
-})
-
-// ROTA: Criar um novo agendamento
+// Criar novo agendamento - qualquer usuário autenticado
 router.post('/', authenticateToken, async (req, res) => {
-  const { id_servico, data, hora } = req.body
-  const id_usuario = req.user.id
+  const { id_usuario, id_servico, data, hora, status } = req.body
 
-  // Validação de campos obrigatórios
-  if (!id_servico || !data || !hora) {
-    return res.status(400).json({ error: 'Campos obrigatórios: id_servico, data, hora' })
+  if (!id_usuario || !id_servico || !data || !hora) {
+    return res.status(400).json({ error: 'Campos obrigatórios faltando' })
   }
 
   try {
-    // Importante: usar .select() após insert para retornar os dados inseridos
     const { data: novoAgendamento, error } = await supabase
       .from('agendamentos')
-      .insert([{ id_usuario, id_servico, data, hora, status: 'pendente' }])
+      .insert([{ id_usuario, id_servico, data, hora, status }])
       .select()
 
     if (error) {
@@ -43,48 +24,131 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(500).json({ error: 'Erro ao criar agendamento' })
     }
 
-    res.status(201).json({
-      message: 'Agendamento criado com sucesso',
-      agendamento: novoAgendamento[0]
-    })
+    res.status(201).json({ message: 'Agendamento criado com sucesso', agendamento: novoAgendamento[0] })
   } catch (err) {
     console.error('Erro interno:', err)
     res.status(500).json({ error: 'Erro interno no servidor' })
   }
 })
 
-// ROTA: Cancelar um agendamento
-router.put('/:id/cancelar', authenticateToken, async (req, res) => {
-  const id_agendamento = req.params.id
-  const id_usuario = req.user.id
+// Listar todos os agendamentos - apenas admins
+router.get('/', authenticateToken, checkAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('agendamentos').select('*')
+
+    if (error) {
+      console.error('Erro ao buscar agendamentos:', error)
+      return res.status(500).json({ error: 'Erro ao buscar agendamentos' })
+    }
+
+    res.json(data)
+  } catch (err) {
+    console.error('Erro interno:', err)
+    res.status(500).json({ error: 'Erro interno no servidor' })
+  }
+})
+
+// Buscar agendamento por ID - usuário autenticado (pode ser só o dono ou admin, aqui permito admin)
+router.get('/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params
 
   try {
-    // Verifica se o agendamento existe e pertence ao usuário
-    const { data: agendamentoExistente, error: findError } = await supabase
+    const { data, error } = await supabase
       .from('agendamentos')
       .select('*')
-      .eq('id', id_agendamento)
-      .eq('id_usuario', id_usuario)
+      .eq('id', id)
       .single()
 
-    if (findError || !agendamentoExistente) {
+    if (error) {
+      console.error('Erro ao buscar agendamento:', error)
       return res.status(404).json({ error: 'Agendamento não encontrado' })
     }
 
-    // Atualiza o status para cancelado
-    const { data, error } = await supabase
+    // Se quiser restringir acesso: se não for admin e não for dono, bloqueia
+    if (req.user.role !== 'admin' && req.user.id !== data.id_usuario) {
+      return res.status(403).json({ error: 'Acesso negado' })
+    }
+
+    res.json(data)
+  } catch (err) {
+    console.error('Erro interno:', err)
+    res.status(500).json({ error: 'Erro interno no servidor' })
+  }
+})
+
+// Atualizar agendamento pelo ID - só admin ou dono pode atualizar
+router.put('/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params
+  const { id_servico, data, hora, status } = req.body
+
+  try {
+    // Busca agendamento para verificar dono
+    const { data: agendamento, error: findError } = await supabase
       .from('agendamentos')
-      .update({ status: 'cancelado' })
-      .eq('id', id_agendamento)
-      .eq('id_usuario', id_usuario)
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (findError) {
+      return res.status(404).json({ error: 'Agendamento não encontrado' })
+    }
+
+    // Verifica permissão: admin ou dono
+    if (req.user.role !== 'admin' && req.user.id !== agendamento.id_usuario) {
+      return res.status(403).json({ error: 'Acesso negado' })
+    }
+
+    // Atualiza
+    const { data: updated, error } = await supabase
+      .from('agendamentos')
+      .update({ id_servico, data, hora, status })
+      .eq('id', id)
       .select()
 
     if (error) {
-      console.error('Erro ao cancelar agendamento:', error)
-      return res.status(500).json({ error: 'Erro ao cancelar agendamento' })
+      return res.status(500).json({ error: 'Erro ao atualizar agendamento' })
     }
 
-    res.status(200).json({ message: 'Agendamento cancelado com sucesso', data: data[0] })
+    res.json({ message: 'Agendamento atualizado com sucesso', agendamento: updated[0] })
+  } catch (err) {
+    console.error('Erro interno:', err)
+    res.status(500).json({ error: 'Erro interno no servidor' })
+  }
+})
+
+// Deletar agendamento pelo ID - só admin ou dono pode deletar
+router.delete('/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params
+
+  try {
+    // Busca agendamento para verificar dono
+    const { data: agendamento, error: findError } = await supabase
+      .from('agendamentos')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (findError) {
+      return res.status(404).json({ error: 'Agendamento não encontrado' })
+    }
+
+    // Verifica permissão: admin ou dono
+    if (req.user.role !== 'admin' && req.user.id !== agendamento.id_usuario) {
+      return res.status(403).json({ error: 'Acesso negado' })
+    }
+
+    // Deleta
+    const { data, error } = await supabase
+      .from('agendamentos')
+      .delete()
+      .eq('id', id)
+      .select()
+
+    if (error) {
+      return res.status(500).json({ error: 'Erro ao deletar agendamento' })
+    }
+
+    res.json({ message: 'Agendamento deletado com sucesso' })
   } catch (err) {
     console.error('Erro interno:', err)
     res.status(500).json({ error: 'Erro interno no servidor' })

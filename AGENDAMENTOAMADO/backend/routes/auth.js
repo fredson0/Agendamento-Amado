@@ -7,17 +7,21 @@ const router = express.Router()
 
 // ROTA DE CADASTRO
 router.post('/register', async (req, res) => {
-  const { nome, email, senha } = req.body
+  const { nome, email, senha, role } = req.body
+
+  // Validação simples do role
+  const validRoles = ['user', 'admin']
+  const userRole = validRoles.includes(role) ? role : 'user'
 
   try {
     // Verifica se o email já está cadastrado
-    const { data: existente } = await supabase
+    const { data: existente, error: errorExistente } = await supabase
       .from('usuario')
       .select('*')
       .eq('email', email)
       .single()
 
-    if (existente) {
+    if (errorExistente === null && existente) {
       return res.status(409).json({ error: 'Email já cadastrado' })
     }
 
@@ -27,8 +31,8 @@ router.post('/register', async (req, res) => {
     // Insere novo usuário no banco e retorna os dados
     const { data, error } = await supabase
       .from('usuario')
-      .insert([{ nome, email, senha: hashedPassword }])
-      .select() // Adiciona isso para retornar os dados inseridos
+      .insert([{ nome, email, senha: hashedPassword, role: userRole }])
+      .select()
 
     if (error) {
       console.error('Erro ao inserir:', error)
@@ -65,14 +69,17 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Email ou senha inválidos' })
     }
 
-    // Gera token JWT
+    // Gera token JWT incluindo role
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email },
+      { id: usuario.id, email: usuario.email, role: usuario.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '23h' }
     )
 
-    res.json({ message: 'Login realizado com sucesso', token, usuario })
+    // Remove a senha do objeto usuário antes de retornar
+    const { senha: _, ...usuarioSemSenha } = usuario
+
+    res.json({ message: 'Login realizado com sucesso', token, usuario: usuarioSemSenha })
   } catch (err) {
     console.error('Erro interno:', err)
     res.status(500).json({ error: 'Erro no servidor' })
