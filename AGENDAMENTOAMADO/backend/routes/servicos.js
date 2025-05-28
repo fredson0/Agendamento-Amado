@@ -15,7 +15,7 @@ router.post('/', authenticateToken, async (req, res) => {
   const { data, error } = await supabase
     .from('servicos')
     .insert([{ nome, descricao }])
-    .select() // Para retornar o registro inserido
+    .select() 
 
   if (error) {
     console.error('Erro ao criar serviço:', error)
