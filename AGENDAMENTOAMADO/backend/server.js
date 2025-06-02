@@ -5,7 +5,9 @@ import supabase from './supabaseClient.js'
 
 import authRoutes from './routes/auth.js'
 import agendamentoRoutes from './routes/agendamentos.js' 
-import servicosRoutes from './routes/servicos.js' 
+import servicosRoutes from './routes/servicos.js'
+import dashboardRoutes from './routes/dashboard.js'
+import contatoRoutes from './routes/contato.js'
 
 const app = express()
 const port = 3001
@@ -15,7 +17,9 @@ app.use(express.json())
 
 app.use('/auth', authRoutes)
 app.use('/agendamento', agendamentoRoutes)  
-app.use('/servicos', servicosRoutes)        
+app.use('/servicos', servicosRoutes)
+app.use('/dashboard', dashboardRoutes)
+app.use('/contato', contatoRoutes)
 
 app.get('/', (req, res) => {
   res.send('API do Núcleo AMADO rodando!')

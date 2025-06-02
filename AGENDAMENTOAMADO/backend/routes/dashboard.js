@@ -125,10 +125,10 @@ router.get('/', authenticateToken, async (req, res) => {
 
       // Informações do Núcleo AMADO
       contato: {
-        telefone: "(71) 99999-9999",
+        telefone: "(71) 12346-9999",
         email: "contato@amadounijorge.edu.br",
         endereco: "Unijorge - Salvador, BA",
-        horarios: "Segunda a Sexta: 8h às 17h"
+        horarios: "Segunda a Sexta: 10h às 16h"
       },
 
       // Links de navegação rápida (para o frontend usar)
