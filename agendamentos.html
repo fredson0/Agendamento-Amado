@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Acolhe+ | Agendamento</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+<script src="global.js"></script>
+  <style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.6s ease-out;
+    }
+    select:focus, input:focus {
+      background-color: rgba(255, 255, 255, 0.25);
+      border-color: #a78bfa;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-purple-700 via-purple-800 to-indigo-900 min-h-screen text-white font-sans leading-relaxed">
+
+  <header class="bg-transparent py-5 drop-shadow-md">
+    <nav class="container mx-auto flex justify-between items-center px-6 max-w-6xl">
+      <h1 class="text-3xl font-extrabold drop-shadow-lg">Acolhe+</h1>
+      <ul class="flex space-x-6 text-white/80 font-semibold text-base">
+        <li><a href="index.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Início</a></li>
+        <li><a href="servicos.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Serviços</a></li>
+        <li><a href="agendamentos.html" class="border-b-4 border-purple-400 pb-1 hover:text-white transition cursor-pointer">Agendamentos</a></li>
+        <li><a href="leis.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Leis</a></li>
+        <li><a href="depoimentos.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Depoimentos</a></li>
+        <li><a href="meus-agendamentos.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Meus Agendamentos</a></li>
+        <li><a href="login.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Entrar</a></li>
+        <li><a href="cadastro.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Cadastro</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container mx-auto max-w-3xl px-6 py-16">
+    <h2 class="text-5xl font-extrabold drop-shadow-lg mb-12 text-center text-purple-200">Agendamento</h2>
+
+    <form id="formAgendamento" class="bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-10 max-w-xl mx-auto animate-fade-in">
+
+      <div class="mb-8">
+        <label for="nome" class="block text-purple-300 font-semibold mb-2">Nome Completo</label>
+        <input type="text" id="nome" name="nome" required class="w-full rounded-lg px-4 py-3 text-base text-white bg-transparent border border-purple-400" />
+      </div>
+
+      <div class="mb-8">
+        <label for="email" class="block text-purple-300 font-semibold mb-2">E-mail</label>
+        <input type="email" id="email" name="email" required class="w-full rounded-lg px-4 py-3 text-base text-white bg-transparent border border-purple-400" />
+      </div>
+
+      <div class="mb-8">
+        <label for="profissional" class="block text-purple-300 font-semibold mb-2">Profissional</label>
+        <select id="profissional" name="profissional" required class="w-full rounded-lg px-4 py-3 text-base text-black bg-transparent border border-purple-400">
+          <option value="" disabled selected>Selecione um profissional</option>
+          <option value="rafael">Dr. Rafael Costa - Direitos Humanos</option>
+          <option value="larissa">Dra. Larissa Almeida - Direito Criminal</option>
+          <option value="marina">Dra. Marina Sousa - Clínica Geral</option>
+          <option value="joao">Dr. João Vitor Lima - Enfermagem</option>
+          <option value="camila">Dra. Camila Rocha - Psicologia Clínica</option>
+          <option value="lucas">Dr. Lucas Fernandes - Psicoterapia</option>
+        </select>
+      </div>
+
+      <div class="mb-8">
+        <label for="data" class="block text-purple-300 font-semibold mb-2">Data do Agendamento</label>
+        <select id="data" name="data" required class="w-full rounded-lg px-4 py-3 text-base text-black bg-transparent border border-purple-400">
+          <option value="" disabled selected>Selecione uma data</option>
+          <option value="2025-06-10">10/06/2025</option>
+          <option value="2025-06-12">12/06/2025</option>
+          <option value="2025-06-15">15/06/2025</option>
+        </select>
+      </div>
+
+      <div class="mb-8">
+        <label for="hora" class="block text-purple-300 font-semibold mb-2">Hora do Agendamento</label>
+        <select id="hora" name="hora" required class="w-full rounded-lg px-4 py-3 text-base text-black bg-transparent border border-purple-400">
+          <option value="" disabled selected>Selecione um horário</option>
+          <option value="09:00">09:00</option>
+          <option value="10:30">10:30</option>
+          <option value="14:00">14:00</option>
+          <option value="16:00">16:00</option>
+        </select>
+      </div>
+
+      <button type="submit" class="w-full bg-white/10 hover:bg-white/20 text-purple-300 font-semibold py-4 rounded-lg transition cursor-pointer drop-shadow-md">
+        Confirmar Agendamento
+      </button>
+    </form>
+  </main>
+
+  <footer class="bg-indigo-900 py-12 mt-32 shadow-inner">
+    <div class="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row justify-between items-center text-white text-sm space-y-6 md:space-y-0">
+      <p>&copy; 2025 Acolhe+ | Todos os direitos reservados.</p>
+      <nav>
+        <p class="text-white/80">Um Oferecimento Nucleo AMADO da UNIJORGE</p>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("formAgendamento").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const nome = document.getElementById("nome").value;
+  const email = document.getElementById("email").value;
+  const data = document.getElementById("data").value;
+  const hora = document.getElementById("hora").value;
+
+  const response = await fetch('http://<IP-PUBLICO-EC2>:3000/agendamento', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ usuarioId: 1, data, horario }),
+  });
+
+  if (response.ok) {
+    alert(`✅ Agendamento confirmado para ${nome} em ${data} às ${hora}.`);
+    this.reset();
+  } else {
+    alert('Erro ao criar agendamento.');
+  }
+});
+  </script>
+
+</body>
+</html>
