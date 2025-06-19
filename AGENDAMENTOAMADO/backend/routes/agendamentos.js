@@ -5,92 +5,120 @@ import { checkAdmin } from '../middlewares/adminMiddleware.js'
 
 const router = express.Router()
 
-// Criar novo agendamento - qualquer usuário autenticado
+// Criar agendamento
 router.post('/', authenticateToken, async (req, res) => {
-  const { id_servico, data, hora, status } = req.body
-  const id_usuario = req.user.id
-
-  if (!id_servico || !data || !hora) {
-    return res.status(400).json({ error: 'Campos obrigatórios faltando' })
-  }
-
   try {
+    const { id_servico, data, hora, status = 'agendado' } = req.body
+    const id_usuario = req.user.id
+
+    console.log('Dados recebidos para agendamento:', { id_servico, data, hora, id_usuario, status })
+
+    if (!id_servico || !data || !hora) {
+      return res.status(400).json({ error: 'Todos os campos são obrigatórios' })
+    }
+
     // Verificar se o serviço existe
-    const { data: servico, error: servicoError } = await supabase
+    const { data: servico, error: errorServico } = await supabase
       .from('servicos')
-      .select('id_serv')
+      .select('*')
       .eq('id_serv', id_servico)
       .single()
 
-    if (servicoError || !servico) {
+    if (errorServico || !servico) {
+      console.error('Erro ao verificar serviço:', errorServico)
       return res.status(400).json({ error: 'Serviço não encontrado' })
     }
 
-    // Verificar se já existe agendamento no mesmo horário
-    const { data: conflito, error: conflitoError } = await supabase
+    // Verificar se já existe agendamento para o mesmo usuário, data e hora
+    const { data: agendamentoExistente, error: errorCheck } = await supabase
       .from('agendamentos')
-      .select('id_agend')
+      .select('*')
+      .eq('id_usuario', id_usuario)
       .eq('data', data)
       .eq('hora', hora)
-      .eq('status', 'agendado')
 
-    if (conflito && conflito.length > 0) {
-      return res.status(400).json({ error: 'Horário já ocupado' })
+    if (errorCheck) {
+      console.error('Erro ao verificar agendamento existente:', errorCheck)
+      return res.status(500).json({ error: 'Erro interno do servidor' })
     }
 
+    if (agendamentoExistente && agendamentoExistente.length > 0) {
+      return res.status(400).json({ error: 'Você já tem um agendamento para esta data e hora' })
+    }
+
+    // Criar o agendamento
     const { data: novoAgendamento, error } = await supabase
       .from('agendamentos')
-      .insert([{ id_usuario, id_servico, data, hora, status }])
+      .insert([{
+        id_usuario,
+        id_servico: parseInt(id_servico),
+        data,
+        hora,
+        status
+      }])
       .select()
 
     if (error) {
       console.error('Erro ao criar agendamento:', error)
-      return res.status(500).json({ error: 'Erro ao criar agendamento' })
+      return res.status(500).json({ error: 'Erro ao criar agendamento: ' + error.message })
     }
 
-    res.status(201).json({ message: 'Agendamento criado com sucesso', agendamento: novoAgendamento[0] })
-  } catch (err) {
-    console.error('Erro interno:', err)
-    res.status(500).json({ error: 'Erro interno no servidor' })
+    console.log('Agendamento criado com sucesso:', novoAgendamento)
+    res.status(201).json({ 
+      message: 'Agendamento criado com sucesso!', 
+      agendamento: novoAgendamento[0] 
+    })
+  } catch (error) {
+    console.error('Erro geral ao criar agendamento:', error)
+    res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
 
-// Listar agendamentos do usuário logado
+// Buscar agendamentos do usuário logado
 router.get('/meus', authenticateToken, async (req, res) => {
-  const id_usuario = req.user.id
-
   try {
-    const { data, error } = await supabase
-      .from('agendamentos')
-      .select('*')
-      .eq('id_usuario', id_usuario)
-      .order('data', { ascending: true })
-      .order('hora', { ascending: true })
+    const id_usuario = req.user.id
 
-    if (error) {
-      console.error('Erro ao buscar meus agendamentos:', error)
-      return res.status(500).json({ error: 'Erro ao buscar agendamentos' })
-    }
+    console.log('Buscando agendamentos para usuário:', id_usuario)
 
-    res.json(data)
-  } catch (err) {
-    console.error('Erro interno:', err)
-    res.status(500).json({ error: 'Erro interno no servidor' })
-  }
-})
-
-// Listar todos os agendamentos - apenas admins
-router.get('/', authenticateToken, checkAdmin, async (req, res) => {
-  try {
-    const { data, error } = await supabase
+    const { data: agendamentos, error } = await supabase
       .from('agendamentos')
       .select(`
-        id_agend,
-        data,
-        hora,
-        status,
-        id_usuario,
-        id_servico,
+        *,
+        servicos (
+          id_serv,
+          nome_serv,
+          descricao
+        )
+      `)
+      .eq('id_usuario', id_usuario)
+      .order('data', { ascending: true })
+
+    if (error) {
+      console.error('Erro ao buscar agendamentos:', error)
+      return res.status(500).json({ error: 'Erro ao buscar agendamentos: ' + error.message })
+    }
+
+    console.log('Agendamentos encontrados:', agendamentos)
+    res.json(agendamentos || [])
+  } catch (error) {
+    console.error('Erro geral ao buscar agendamentos:', error)
+    res.status(500).json({ error: 'Erro interno do servidor' })
+  }
+})
+
+// Buscar todos os agendamentos (admin)
+router.get('/', authenticateToken, checkAdmin, async (req, res) => {
+  try {
+    const { data: agendamentos, error } = await supabase
+      .from('agendamentos')
+      .select(`
+        *,
+        servicos (
+          id_serv,
+          nome_serv,
+          descricao
+        ),
         usuario (
           id,
           nome,
@@ -98,170 +126,78 @@ router.get('/', authenticateToken, checkAdmin, async (req, res) => {
         )
       `)
       .order('data', { ascending: true })
-      .order('hora', { ascending: true })
 
     if (error) {
-      console.error('Erro ao buscar agendamentos:', error)
-      return res.status(500).json({ error: 'Erro ao buscar agendamentos' })
+      console.error('Erro ao buscar todos os agendamentos:', error)
+      return res.status(500).json({ error: 'Erro ao buscar agendamentos: ' + error.message })
     }
 
-    // Buscar dados dos serviços separadamente
-    const agendamentosComServicos = await Promise.all(data.map(async (agendamento) => {
-      const { data: servico } = await supabase
-        .from('servicos')
-        .select('id_serv, nome_serv, descricao')
-        .eq('id_serv', agendamento.id_servico)
-        .single()
-      
-      return {
-        ...agendamento,
-        servicos: servico
-      }
-    }))
-
-    res.json(agendamentosComServicos)
-  } catch (err) {
-    console.error('Erro interno:', err)
-    res.status(500).json({ error: 'Erro interno no servidor' })
+    res.json(agendamentos || [])
+  } catch (error) {
+    console.error('Erro geral ao buscar todos os agendamentos:', error)
+    res.status(500).json({ error: 'Erro interno do servidor' })
   }
 })
 
-// Buscar agendamento por ID - usuário autenticado
-router.get('/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params
-
+// ROTA DE TESTE SEM AUTENTICAÇÃO - TEMPORÁRIA
+router.get('/test-db-public', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    console.log('=== TESTE DE BANCO DE DADOS (PÚBLICO) ===')
+    
+    // Testar estrutura da tabela agendamentos
+    const { data: estruturaAgendamentos, error: errorEstrutura } = await supabase
       .from('agendamentos')
       .select('*')
-      .eq('id_agend', id)
-      .single()
-
-    if (error) {
-      console.error('Erro ao buscar agendamento:', error)
-      return res.status(404).json({ error: 'Agendamento não encontrado' })
-    }
-
-    // Verificar permissão: admin ou dono
-    if (req.user.role !== 'admin' && req.user.id !== data.id_usuario) {
-      return res.status(403).json({ error: 'Acesso negado' })
-    }
-
-    // Buscar dados do usuário e serviço
-    const { data: usuario } = await supabase
+      .limit(5)
+    
+    console.log('Estrutura agendamentos:', estruturaAgendamentos)
+    console.log('Erro estrutura:', errorEstrutura)
+    
+    // Testar todos os agendamentos
+    const { data: todosAgendamentos, error: errorTodos } = await supabase
+      .from('agendamentos')
+      .select('*')
+    
+    console.log('Todos os agendamentos:', todosAgendamentos)
+    console.log('Erro todos:', errorTodos)
+    
+    // Testar estrutura da tabela servicos
+    const { data: estruturaServicos, error: errorServicos } = await supabase
+      .from('servicos')
+      .select('*')
+      .limit(3)
+      console.log('Estrutura serviços:', estruturaServicos)
+    console.log('Erro serviços:', errorServicos)
+    
+    // Testar estrutura da tabela usuario
+    const { data: estruturaUsuario, error: errorUsuario } = await supabase
       .from('usuario')
       .select('id, nome, email')
-      .eq('id', data.id_usuario)
-      .single()
-
-    const { data: servico } = await supabase
-      .from('servicos')
-      .select('id_serv, nome_serv, descricao')
-      .eq('id_serv', data.id_servico)
-      .single()
-
+      .limit(3)
+    
+    console.log('Estrutura usuários:', estruturaUsuario)
+    console.log('Erro usuários:', errorUsuario)
+    
     res.json({
-      ...data,
-      usuario,
-      servicos: servico
-    })
-  } catch (err) {
-    console.error('Erro interno:', err)
-    res.status(500).json({ error: 'Erro interno no servidor' })
-  }
-})
-
-// Atualizar agendamento pelo ID - só admin ou dono pode atualizar
-router.put('/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params
-  const { id_servico, data, hora, status } = req.body
-
-  try {
-    // Busca agendamento para verificar dono
-    const { data: agendamento, error: findError } = await supabase
-      .from('agendamentos')
-      .select('*')
-      .eq('id_agend', id)
-      .single()
-
-    if (findError) {
-      return res.status(404).json({ error: 'Agendamento não encontrado' })
-    }
-
-    // Verifica permissão: admin ou dono
-    if (req.user.role !== 'admin' && req.user.id !== agendamento.id_usuario) {
-      return res.status(403).json({ error: 'Acesso negado' })
-    }
-
-    // Se for mudança de data/hora, verificar conflito
-    if ((data && data !== agendamento.data) || (hora && hora !== agendamento.hora)) {
-      const { data: conflito, error: conflitoError } = await supabase
-        .from('agendamentos')
-        .select('id_agend')
-        .eq('data', data || agendamento.data)
-        .eq('hora', hora || agendamento.hora)
-        .eq('status', 'agendado')
-        .neq('id_agend', id)
-
-      if (conflito && conflito.length > 0) {
-        return res.status(400).json({ error: 'Horário já ocupado' })
+      message: 'Teste do banco de dados',
+      agendamentos: {
+        total: todosAgendamentos?.length || 0,
+        dados: estruturaAgendamentos,
+        erro: errorEstrutura?.message
+      },
+      servicos: {
+        total: estruturaServicos?.length || 0,
+        dados: estruturaServicos,
+        erro: errorServicos?.message
+      },
+      usuarios: {
+        dados: estruturaUsuario,
+        erro: errorUsuario?.message
       }
-    }
-
-    // Atualiza
-    const { data: updated, error } = await supabase
-      .from('agendamentos')
-      .update({ id_servico, data, hora, status })
-      .eq('id_agend', id)
-      .select()
-
-    if (error) {
-      return res.status(500).json({ error: 'Erro ao atualizar agendamento' })
-    }
-
-    res.json({ message: 'Agendamento atualizado com sucesso', agendamento: updated[0] })
-  } catch (err) {
-    console.error('Erro interno:', err)
-    res.status(500).json({ error: 'Erro interno no servidor' })
-  }
-})
-
-// Deletar agendamento pelo ID - só admin ou dono pode deletar
-router.delete('/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params
-
-  try {
-    // Busca agendamento para verificar dono
-    const { data: agendamento, error: findError } = await supabase
-      .from('agendamentos')
-      .select('*')
-      .eq('id_agend', id)
-      .single()
-
-    if (findError) {
-      return res.status(404).json({ error: 'Agendamento não encontrado' })
-    }
-
-    // Verifica permissão: admin ou dono
-    if (req.user.role !== 'admin' && req.user.id !== agendamento.id_usuario) {
-      return res.status(403).json({ error: 'Acesso negado' })
-    }
-
-    // Deleta
-    const { data, error } = await supabase
-      .from('agendamentos')
-      .delete()
-      .eq('id_agend', id)
-      .select()
-
-    if (error) {
-      return res.status(500).json({ error: 'Erro ao deletar agendamento' })
-    }
-
-    res.json({ message: 'Agendamento deletado com sucesso' })
-  } catch (err) {
-    console.error('Erro interno:', err)
-    res.status(500).json({ error: 'Erro interno no servidor' })
+    })
+  } catch (error) {
+    console.error('Erro no teste:', error)
+    res.status(500).json({ error: error.message })
   }
 })
 

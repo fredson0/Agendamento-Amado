@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />  <title>Acolhe+ | Meus Agendamentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fade-in 0.6s ease-out;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-purple-700 via-purple-800 to-indigo-900 min-h-screen text-white font-sans leading-relaxed">
+
+  <header class="bg-transparent py-5 drop-shadow-md">
+    <nav class="container mx-auto flex justify-between items-center px-6 max-w-6xl">
+      <h1 class="text-3xl font-extrabold drop-shadow-lg">Acolhe+</h1>
+      <ul class="flex space-x-6 text-white/80 font-semibold text-base">
+        <li><a href="index.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Início</a></li>
+        <li><a href="servicos.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Serviços</a></li>
+        <li><a href="agendamentos.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Agendamentos</a></li>
+        <li><a href="leis.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Leis</a></li>
+        <li><a href="depoimentos.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Depoimentos</a></li>
+        <li><a href="meus-agendamentos.html" class="border-b-4 border-purple-400 pb-1 hover:text-white transition cursor-pointer">Meus Agendamentos</a></li>
+        <li><a href="login.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Entrar</a></li>
+        <li><a href="cadastro.html" class="hover:border-b-4 hover:border-purple-400 pb-1 transition hover:text-white cursor-pointer">Cadastro</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container mx-auto max-w-3xl px-6 py-16">
+    <h2 class="text-5xl font-extrabold drop-shadow-lg mb-12 text-center text-purple-200">Meus Agendamentos</h2>
+    <div id="agendamentos-list" class="bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-10 max-w-xl mx-auto animate-fade-in"></div>
+  </main>
+
+  <footer class="bg-indigo-900 py-12 mt-32 shadow-inner">
+    <div class="container mx-auto px-6 max-w-6xl flex flex-col md:flex-row justify-between items-center text-white text-sm space-y-6 md:space-y-0">
+      <p>&copy; 2025 Acolhe+ | Todos os direitos reservados.</p>
+      <nav>
+        <p class="text-white/80">Um Oferecimento Nucleo AMADO da UNIJORGE</p>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
